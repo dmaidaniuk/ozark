@@ -44,7 +44,6 @@ import org.glassfish.ozark.core.Messages;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
-import javax.mvc.annotation.Controller;
 import javax.mvc.annotation.CsrfValid;
 import javax.mvc.security.Csrf;
 import javax.ws.rs.POST;
@@ -62,7 +61,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLDecoder;
-import javax.ws.rs.ext.Provider;
 
 import static org.glassfish.ozark.util.AnnotationUtils.hasAnnotation;
 
@@ -85,7 +83,6 @@ import static org.glassfish.ozark.util.AnnotationUtils.hasAnnotation;
  * @author Santiago Pericas-Geertsen
  * @see <a href="http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars">HTML 4.0 Appendix</a>
  */
-@Provider
 @Priority(Priorities.HEADER_DECORATOR)
 public class CsrfValidateInterceptor implements ReaderInterceptor {
 

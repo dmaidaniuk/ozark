@@ -44,7 +44,6 @@ import org.glassfish.ozark.OzarkConfig;
 import javax.annotation.Priority;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
-import javax.mvc.annotation.Controller;
 import javax.mvc.security.Csrf;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -52,7 +51,6 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
-import javax.ws.rs.ext.Provider;
 
 /**
  * <p>Response filter that adds the CSRF header with a unique token value. When CSRF
@@ -68,7 +66,6 @@ import javax.ws.rs.ext.Provider;
  *
  * @author Santiago Pericas-Geertsen
  */
-@Provider
 @Priority(Priorities.HEADER_DECORATOR)
 public class CsrfProtectFilter implements ContainerResponseFilter {
 

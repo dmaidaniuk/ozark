@@ -70,7 +70,7 @@ public class LocaleResolverChain {
     @PostConstruct
     public void verify() {
         Objects.requireNonNull(configuration, "The Configuration instance was not injected! " +
-                "Please make sure you are using a recent version of Jersey.");
+                "Please make sure you are using a recent version of JAX-RS 2.0 implementation.");
     }
 
     public Locale resolve(ContainerRequestContext requestContext) {

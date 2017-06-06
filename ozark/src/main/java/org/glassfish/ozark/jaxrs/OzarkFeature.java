@@ -39,30 +39,27 @@
  */
 package org.glassfish.ozark.jaxrs;
 
-import org.glassfish.ozark.cdi.ValidationInterceptor;
-import org.glassfish.ozark.core.ViewRequestFilter;
-import org.glassfish.ozark.core.ViewResponseFilter;
-import org.glassfish.ozark.core.ViewableWriter;
-import org.glassfish.ozark.locale.LocaleRequestFilter;
-import org.glassfish.ozark.security.CsrfProtectFilter;
-import org.glassfish.ozark.security.CsrfValidateInterceptor;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.annotation.Priority;
-import javax.mvc.annotation.Controller;
 import javax.mvc.engine.Priorities;
 import javax.servlet.ServletContext;
 import javax.ws.rs.ConstrainedTo;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
-import java.util.Arrays;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.ext.Provider;
+import org.glassfish.ozark.cdi.ValidationInterceptor;
+import org.glassfish.ozark.core.ViewRequestFilter;
+import org.glassfish.ozark.core.ViewResponseFilter;
+import org.glassfish.ozark.core.ViewableWriter;
 import org.glassfish.ozark.jersey.OzarkModelProcessor;
-
-import static org.glassfish.ozark.util.AnnotationUtils.getAnnotation;
+import org.glassfish.ozark.locale.LocaleRequestFilter;
+import org.glassfish.ozark.security.CsrfProtectFilter;
+import org.glassfish.ozark.security.CsrfValidateInterceptor;
+import static org.glassfish.ozark.servlet.OzarkContainerInitializer.OZARK_ENABLE_FEATURES_KEY;
 
 /**
  * <p>
@@ -75,24 +72,30 @@ import static org.glassfish.ozark.util.AnnotationUtils.getAnnotation;
  * @author Dmytro Maidaniuk
  */
 @ConstrainedTo(RuntimeType.SERVER)
-@Priority(Priorities.FRAMEWORK)
+@Priority(Priorities.DEFAULT)
 @Provider
-public class OzarkFeature implements DynamicFeature {
+public class OzarkFeature implements Feature {
+
+    private static final Logger LOG = Logger.getLogger(OzarkFeature.class.getName());
 
     @Context
     private ServletContext servletContext;
 
     @Override
-    public void configure(ResourceInfo resourceInfo, FeatureContext context) {
+    public boolean configure(FeatureContext context) {
+        LOG.log(Level.INFO, "Started feature configuration for {0}", getClass().getName());
         final Configuration config = context.getConfiguration();
         if (config.isRegistered(ViewResponseFilter.class)) {
-            return;     // already registered!
+            LOG.log(Level.INFO, "Ozark providers already registered. Skipping.");
+            return false;     // already registered!
         }
+        
+        boolean enableOzark = (Boolean) servletContext.getAttribute(OZARK_ENABLE_FEATURES_KEY);
 
-        boolean enableOzark = config.getClasses().stream().anyMatch(this::isController)
-                || config.getInstances().stream().map(o -> o.getClass()).anyMatch(this::isController);
+        LOG.log(Level.INFO, "Is Ozark need to be enabled: {0}", enableOzark);
 
         if (enableOzark) {
+            LOG.log(Level.INFO, "Registering Ozark providers...");
             context.register(ViewRequestFilter.class);
             context.register(ViewResponseFilter.class);
             context.register(ViewableWriter.class);
@@ -102,11 +105,7 @@ public class OzarkFeature implements DynamicFeature {
             context.register(CsrfProtectFilter.class);
             context.register(LocaleRequestFilter.class);
         }
-    }
-
-    private boolean isController(Class<?> c) {
-        return getAnnotation(c, Controller.class) != null || 
-                Arrays.stream(c.getMethods()).anyMatch(m -> getAnnotation(m, Controller.class) != null);
+        return true;
     }
 
 }

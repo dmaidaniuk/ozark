@@ -172,6 +172,20 @@ public final class AnnotationUtils {
     }
 
     /**
+     * Determines if an annotation is present on a method by calling
+     * {@link #getAnnotation(java.lang.reflect.Method, Class)}.
+     *
+     * @param <T> the type.
+     * @param clazz class to search annotation.
+     * @param annotationType type of annotation to search for.
+     * @return outcome of test.
+     */
+    public static <T extends Annotation> boolean hasAnnotationOnClassOrMethod(Class<?> clazz, Class<T> annotationType) {
+        return hasAnnotation(clazz, annotationType)
+                || Arrays.stream(clazz.getMethods()).anyMatch(m -> hasAnnotation(m, annotationType));
+    }
+
+    /**
      * Determines if a method has one or more MVC or JAX-RS annotations on it.
      *
      * @param method method to check for MVC or JAX-RS annotations.

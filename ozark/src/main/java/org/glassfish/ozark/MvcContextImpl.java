@@ -58,7 +58,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
-import javax.ws.rs.ext.Provider;
 
 /**
  * Implementation of {@link javax.mvc.MvcContext}.
@@ -67,7 +66,6 @@ import javax.ws.rs.ext.Provider;
  */
 @Named("mvc")
 @RequestScoped
-@Provider
 public class MvcContextImpl implements MvcContext {
 
     private static final Logger log = Logger.getLogger(MvcContextImpl.class.getName());

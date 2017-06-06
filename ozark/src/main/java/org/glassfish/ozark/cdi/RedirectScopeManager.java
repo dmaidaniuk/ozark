@@ -70,7 +70,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
-import javax.ws.rs.ext.Provider;
 
 /**
  * The ApplicationScoped redirect scope manager.
@@ -79,7 +78,6 @@ import javax.ws.rs.ext.Provider;
  * @author Santiago Pericas-Geertsen
  */
 @ApplicationScoped
-@Provider
 @SuppressWarnings("unchecked")
 public class RedirectScopeManager {
 

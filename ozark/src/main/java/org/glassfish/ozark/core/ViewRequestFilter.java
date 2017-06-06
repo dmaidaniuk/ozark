@@ -53,7 +53,6 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import javax.ws.rs.ext.Provider;
 
 import static org.glassfish.ozark.cdi.OzarkCdiExtension.isEventObserved;
 
@@ -68,7 +67,7 @@ import static org.glassfish.ozark.cdi.OzarkCdiExtension.isEventObserved;
  *
  * @author Santiago Pericas-Geertsen
  */
-@Provider
+@Controller
 @Priority(Priorities.ENTITY_CODER)
 public class ViewRequestFilter implements ContainerRequestFilter {
 

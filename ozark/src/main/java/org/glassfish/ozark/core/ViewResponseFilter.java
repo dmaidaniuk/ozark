@@ -67,7 +67,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.*;
-import javax.ws.rs.ext.Provider;
 import static org.glassfish.ozark.cdi.OzarkCdiExtension.isEventObserved;
 import static org.glassfish.ozark.util.AnnotationUtils.getAnnotation;
 import static org.glassfish.ozark.util.PathUtils.*;
@@ -92,7 +91,6 @@ import static org.glassfish.ozark.util.PathUtils.*;
  *
  * @author Santiago Pericas-Geertsen
  */
-@Provider
 @Priority(Priorities.ENTITY_CODER)
 public class ViewResponseFilter implements ContainerResponseFilter {
 
