@@ -32,6 +32,7 @@ import java.util.Set;
  * Weld is not found.
  *
  * @author Santiago Pericas-Geertsen
+ * @author Dmytro Maidaniuk
  */
 public final class BindingResultUtils {
 
@@ -51,14 +52,14 @@ public final class BindingResultUtils {
     }
 
     /**
-     * Search for a {@code javax.mvc.binding.BindingResult} field in the resource's
+     * Search for a {@code javax.mvc.binding.BindingResult} field in the resource
      * class hierarchy. Field must be annotated with {@link javax.inject.Inject}.
      *
-     * @param resource resource instance.
+     * @param resourceClass resource class.
      * @return field or {@code null} if none is found.
      */
-    private static Field getBindingResultField(final Object resource) {
-        Class<?> clazz = resource.getClass();
+    private static Field getBindingResultField(final Class<?> resourceClass) {
+        Class<?> clazz = resourceClass;
         do {
             for (Field f : clazz.getDeclaredFields()) {
                 // Of BindingResult and CDI injectable
@@ -69,6 +70,16 @@ public final class BindingResultUtils {
             clazz = clazz.getSuperclass();
         } while (clazz != Object.class);
         return null;
+    }
+
+    /**
+     * Determines if a resource class has a field or a property of type {@code javax.mvc.binding.BindingResult}.
+     *
+     * @param resourceClass resource class.
+     * @return outcome of test.
+     */
+    public static boolean hasBindingResultFieldOrProperty(final Class<?> resourceClass) {
+        return hasBindingResultProperty(resourceClass) || getBindingResultField(resourceClass) != null;
     }
 
     /**
@@ -90,12 +101,13 @@ public final class BindingResultUtils {
 
         // Otherwise, check property and then field
         try {
-            if (hasBindingResultProperty(resource)) {
-                final Object obj = getBindingResultGetter(resource).invoke(resource);
+            Class<?> resourceClass = resource.getClass();
+            if (hasBindingResultProperty(resourceClass)) {
+                final Object obj = getBindingResultGetter(resourceClass).invoke(resource);
                 getSetterMethod(obj, "setErrors").invoke(obj, errors);
             } else {
                 // Then check for a field
-                final Field vr = getBindingResultField(resource);
+                final Field vr = getBindingResultField(resourceClass);
                 if (vr != null) {
                     AccessController.doPrivileged((java.security.PrivilegedAction<Void>) () -> {
                         vr.setAccessible(true);
@@ -133,12 +145,13 @@ public final class BindingResultUtils {
 
         // Otherwise, check property and then field
         try {
-            if (hasBindingResultProperty(resource)) {
-                final Object obj = getBindingResultGetter(resource).invoke(resource);
+            Class<?> resourceClass = resource.getClass();
+            if (hasBindingResultProperty(resourceClass)) {
+                final Object obj = getBindingResultGetter(resourceClass).invoke(resource);
                 getSetterMethod(obj, "setValidationErrors").invoke(obj, validationErrors);
             } else {
                 // Then check for a field
-                final Field vr = getBindingResultField(resource);
+                final Field vr = getBindingResultField(resourceClass);
                 if (vr != null) {
                     AccessController.doPrivileged((java.security.PrivilegedAction<Void>) () -> {
                         vr.setAccessible(true);
@@ -179,24 +192,24 @@ public final class BindingResultUtils {
     }
 
     /**
-     * Determines if a resource has a property of type {@code javax.mvc.binding.BindingResult}.
+     * Determines if a resource class has a property of type {@code javax.mvc.binding.BindingResult}.
      *
-     * @param resource resource instance.
+     * @param resourceClass resource class.
      * @return outcome of test.
      */
-    private static boolean hasBindingResultProperty(final Object resource) {
-        return getBindingResultGetter(resource) != null && getBindingResultSetter(resource) != null;
+    private static boolean hasBindingResultProperty(final Class<?> resourceClass) {
+        return getBindingResultGetter(resourceClass) != null && getBindingResultSetter(resourceClass) != null;
     }
 
     /**
      * Returns a getter for {@code javax.mvc.binding.BindingResult} or {@code null}
      * if one cannot be found.
      *
-     * @param resource resource instance.
+     * @param resourceClass resource class.
      * @return getter or {@code null} if not available.
      */
-    private static Method getBindingResultGetter(final Object resource) {
-        Class<?> clazz = resource.getClass();
+    private static Method getBindingResultGetter(final Class<?> resourceClass) {
+        Class<?> clazz = resourceClass;
         do {
             for (Method m : clazz.getDeclaredMethods()) {
                 if (isBindingResultGetter(m)) {
@@ -218,17 +231,6 @@ public final class BindingResultUtils {
         return m.getName().startsWith("get")
                 && BindingResult.class.isAssignableFrom(m.getReturnType())
                 && Modifier.isPublic(m.getModifiers()) && m.getParameterTypes().length == 0;
-    }
-
-    /**
-     * Returns a setter for {@code javax.mvc.binding.BindingResult} or {@code null}
-     * if one cannot be found.
-     *
-     * @param resource resource instance.
-     * @return setter or {@code null} if not available.
-     */
-    private static Method getBindingResultSetter(final Object resource) {
-        return getBindingResultSetter(resource.getClass());
     }
 
     /**

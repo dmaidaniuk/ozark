@@ -43,7 +43,9 @@ import javax.enterprise.inject.spi.ProcessObserverMethod;
 import javax.mvc.annotation.RedirectScoped;
 import javax.mvc.event.MvcEvent;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,9 +53,13 @@ import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.inject.spi.WithAnnotations;
 import javax.mvc.annotation.Controller;
+import javax.validation.executable.ExecutableType;
+import javax.validation.executable.ValidateOnExecution;
 import javax.ws.rs.Path;
+import static org.glassfish.ozark.binding.BindingResultUtils.hasBindingResultFieldOrProperty;
 import static org.glassfish.ozark.util.AnnotationUtils.hasAnnotation;
 import static org.glassfish.ozark.util.AnnotationUtils.hasAnnotationOnClassOrMethod;
+import static org.glassfish.ozark.util.RuntimeAnnotations.putAnnotation;
 
 /**
  * Class OzarkCdiExtension. Initialize redirect scope as CDI scope. Collect information
@@ -68,6 +74,8 @@ public class OzarkCdiExtension implements Extension {
 
     private static final Logger LOG = Logger.getLogger(OzarkCdiExtension.class.getName());
     private static Set<Class<? extends MvcEvent>> observedEvents;
+    private static final Map<String, Object> VALIDATE_ON_EXECUTION_PARAMS =
+            Collections.singletonMap("type", new ExecutableType[] {ExecutableType.NONE});
 
     /**
      * Before bean discovery.
@@ -156,9 +164,15 @@ public class OzarkCdiExtension implements Extension {
         
         LOG.log(Level.FINE, "Scanning class {0} for MVC Controller annotation", targetClass.getName());
 
-        if (hasAnnotation(targetClass, Controller.class) && hasAnnotationOnClassOrMethod(targetClass, Path.class)) {
+        if (hasAnnotation(targetClass, Controller.class) && hasAnnotationOnClassOrMethod(targetClass, Path.class)
+                && hasBindingResultFieldOrProperty(targetClass)) {
 
-            LOG.log(Level.FINE, "Attaching annotation MvcValidation for class {0}", targetClass.getName());
+            if (!hasAnnotation(targetClass, ValidateOnExecution.class)) {
+                LOG.log(Level.INFO, "Attaching annotation ValidateOnExecution for class {0}", targetClass.getName());
+                putAnnotation(targetClass, ValidateOnExecution.class, VALIDATE_ON_EXECUTION_PARAMS);
+            }
+
+            LOG.log(Level.INFO, "Attaching annotation MvcValidation for class {0}", targetClass.getName());
             Annotation validateAnnotation = () -> MvcValidation.class;
 
             AnnotatedTypeWrapper<T> wrapper = new AnnotatedTypeWrapper<>(
