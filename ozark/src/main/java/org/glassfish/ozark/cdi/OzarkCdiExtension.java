@@ -44,7 +44,19 @@ import javax.mvc.event.MvcEvent;
 import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.enterprise.inject.spi.AnnotatedType;
+import javax.enterprise.inject.spi.ProcessAnnotatedType;
+import javax.enterprise.inject.spi.WithAnnotations;
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.implementation.FixedValue;
+import static net.bytebuddy.matcher.ElementMatchers.named;
+import org.glassfish.ozark.bootstrap.OzarkCoreFeature;
+import static org.glassfish.ozark.util.AnnotationUtils.createApplicationPathAnnotation;
+import static org.glassfish.ozark.util.RuntimeAnnotations.removeAnnotation;
 /**
  * Class OzarkCdiExtension. Initialize redirect scope as CDI scope. Collect information
  * about all MVC events being observed by the application to optimize event creation
@@ -52,10 +64,13 @@ import java.util.Set;
  *
  * @author Santiago Pericas-Geertsen
  * @author Manfred Riem
+ * @author Dmytro Maidaniuk
  */
 @SuppressWarnings("unchecked")
 public class OzarkCdiExtension implements Extension {
 
+    public static final String WRAPPER_CLASS_NAME = OzarkCoreFeature.class.getPackage().getName() + ".JaxRsAppWrapper";
+    private static final Logger LOG = Logger.getLogger(OzarkCdiExtension.class.getName());
     private static Set<Class<? extends MvcEvent>> observedEvents;
 
     /**
@@ -65,6 +80,7 @@ public class OzarkCdiExtension implements Extension {
      * @param beanManager the bean manager.
      */
     public void beforeBeanDiscovery(@Observes final BeforeBeanDiscovery event, BeanManager beanManager) {
+        LOG.log(Level.INFO, "Starting OzarkCdiExtension...");
         event.addScope(RedirectScoped.class, true, true);
 
         CdiUtils.addAnnotatedTypes(event, beanManager,
@@ -125,6 +141,55 @@ public class OzarkCdiExtension implements Extension {
      */
     public void afterBeanDiscovery(@Observes final AfterBeanDiscovery event, BeanManager beanManager) {
         event.addContext(new RedirectScopeContext());
+    }
+
+    /**
+     * Search for {@link javax.ws.rs.ApplicationPath} annotation on class level and perform its replacement
+     * by forked subclass
+     * 
+     * @param <T>
+     * @param processAnnotatedType 
+     */
+    public <T extends Application> void processAnnotatedType(
+            @Observes @WithAnnotations({ApplicationPath.class}) ProcessAnnotatedType<T> processAnnotatedType) {
+
+        AnnotatedType<T> annotatedType = processAnnotatedType.getAnnotatedType();
+        Class<T> targetClass = annotatedType.getJavaClass();
+        try {
+            T application = targetClass.newInstance();
+            Set<Class<?>> appClasses = application.getClasses();
+            Set<Object> appSingletons = application.getSingletons();
+            if (!appClasses.isEmpty() || !appSingletons.isEmpty()) {
+                String targetClassName = targetClass.getName();
+                LOG.log(Level.INFO, "=== Class {0} will be wrapped by Ozark", targetClassName);
+
+                Set<Class<?>> newAppClasses = new HashSet<>(appClasses);
+                newAppClasses.add(OzarkCoreFeature.class);
+                ApplicationPath targetAnnotation = targetClass.getAnnotation(ApplicationPath.class);
+                String servletMapping = targetAnnotation.value();
+                LOG.log(Level.INFO, "JAX-RS servlet mapping: {0}", servletMapping);
+                ApplicationPath clonedAnnotation = createApplicationPathAnnotation(servletMapping);
+                Class wrapper = new ByteBuddy()
+                        .subclass(Application.class)
+                        .name(WRAPPER_CLASS_NAME)
+                        .annotateType(clonedAnnotation)
+                        .method(named("getClasses")).intercept(FixedValue.value(newAppClasses))
+                        .make()
+                        .load(getClass().getClassLoader())
+                        .getLoaded();
+
+                LOG.log(Level.INFO, "=== Removing annotation ApplicationPath for class {0}", targetClassName);
+                removeAnnotation(targetClass, ApplicationPath.class);
+
+                Boolean annotationPresent = wrapper.getAnnotation(ApplicationPath.class) != null;
+                LOG.log(Level.INFO, "=== New wrapper-class created: {0}; JAX-RS anntation present: {1}",
+                                    new String[] {wrapper.getName(), annotationPresent.toString()});
+            }
+        }
+        catch (InstantiationException | IllegalAccessException ex) {
+            throw new IllegalStateException(ex);
+        }
+
     }
 
     /**

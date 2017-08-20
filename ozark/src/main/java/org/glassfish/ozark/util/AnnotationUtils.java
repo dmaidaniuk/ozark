@@ -18,6 +18,7 @@ package org.glassfish.ozark.util;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import javax.ws.rs.ApplicationPath;
 
 /**
  * Utility methods to lookup annotations.
@@ -159,6 +160,22 @@ public final class AnnotationUtils {
     public static <T extends Annotation> boolean hasAnnotationOnClassOrMethod(Class<?> clazz, Class<T> annotationType) {
         return hasAnnotation(clazz, annotationType)
                 || Arrays.stream(clazz.getMethods()).anyMatch(m -> hasAnnotation(m, annotationType));
+    }
+
+    public static ApplicationPath createApplicationPathAnnotation(final String value) {
+        ApplicationPath annotation = new ApplicationPath() {
+            @Override
+            public String value() {
+                return value;
+            }
+
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return ApplicationPath.class;
+            }
+        };
+
+        return annotation;
     }
 
     /**

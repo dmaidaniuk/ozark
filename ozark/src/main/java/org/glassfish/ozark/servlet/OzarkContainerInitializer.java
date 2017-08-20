@@ -15,6 +15,7 @@
  */
 package org.glassfish.ozark.servlet;
 
+import java.util.Map;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -24,7 +25,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.mvc.annotation.Controller;
+import javax.servlet.ServletRegistration;
 import javax.ws.rs.Path;
+import static org.glassfish.ozark.cdi.OzarkCdiExtension.WRAPPER_CLASS_NAME;
 
 import static org.glassfish.ozark.util.AnnotationUtils.getAnnotation;
 import static org.glassfish.ozark.util.AnnotationUtils.hasAnnotationOnClassOrMethod;
@@ -46,10 +49,34 @@ public class OzarkContainerInitializer implements ServletContainerInitializer {
 
     @Override
     public void onStartup(Set<Class<?>> classes, ServletContext servletContext) throws ServletException {
+
+        Map<String, ? extends ServletRegistration> servletRegistrations = servletContext.getServletRegistrations();
+        for (Map.Entry<String, ? extends ServletRegistration> entry : servletRegistrations.entrySet()) {
+            LOG.log(Level.INFO, "Registered servlet: {0}", entry.getKey());
+        }
+
         servletContext.setAttribute(OZARK_ENABLE_FEATURES_KEY, false);
         if (classes != null && !classes.isEmpty()) {
             LOG.log(Level.INFO, "Ozark version {0} started", getClass().getPackage().getImplementationVersion());
+            LOG.log(Level.INFO, "Detected JAX-RS classes: {0}", classes);
+            try {
+                Class wrapper = Class.forName(WRAPPER_CLASS_NAME);
+                LOG.log(Level.INFO, "JAX-RS wrapper name test: {0}", wrapper.getName());
+
+                ApplicationPath targetAnnotation = (ApplicationPath) wrapper.getAnnotation(ApplicationPath.class);
+                String servletMapping = "/" + targetAnnotation.value() + "/*";
+                LOG.log(Level.INFO, "JAX-RS servlet mapping: {0}", servletMapping);
+                
+                String[] urlPatterns = new String[] {servletMapping};
+
+                ServletRegistration.Dynamic newServlet = servletContext.addServlet(wrapper.getName(), wrapper);
+                newServlet.addMapping(urlPatterns);
+            }
+            catch (ClassNotFoundException ex) {
+                LOG.log(Level.SEVERE, "Error during wrapper loading: {0}", ex.getMessage());
+            }
             for (Class<?> clazz : classes) {
+                LOG.log(Level.INFO, "Processed class: {0}", clazz.getName());
                 final ApplicationPath ap = getAnnotation(clazz, ApplicationPath.class);
                 if (ap != null) {
                     if (servletContext.getAttribute(APP_PATH_CONTEXT_KEY) != null) {
@@ -57,6 +84,7 @@ public class OzarkContainerInitializer implements ServletContainerInitializer {
                         throw new IllegalStateException("More than one JAX-RS ApplicationPath detected!");
                     }
                     servletContext.setAttribute(APP_PATH_CONTEXT_KEY, ap.value());
+                    LOG.log(Level.INFO, "=== ApplicationPath class is: {0}", clazz.getName());
                 }
                 if (hasAnnotationOnClassOrMethod(clazz, Path.class) 
                         && hasAnnotationOnClassOrMethod(clazz, Controller.class)) {
