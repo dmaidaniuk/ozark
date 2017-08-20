@@ -20,27 +20,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.glassfish.ozark</groupId>
-        <artifactId>parent</artifactId>
+        <groupId>org.mvc-spec.ozark</groupId>
+        <artifactId>ozark-parent</artifactId>
         <version>1.0.0-m03-SNAPSHOT</version>
     </parent>
-    <groupId>org.glassfish.ozark.test</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>org.mvc-spec.ozark.test</groupId>
+    <artifactId>ozark-parent-test</artifactId>
     <packaging>pom</packaging>
-    <name>Ozark ${project.version} Integration Tests</name>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>2.5</version>
-                <inherited>true</inherited>
-                <configuration>
-                    <failOnMissingWebXml>false</failOnMissingWebXml>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <name>Ozark Integration Tests Parent</name>
     <dependencies>
         <dependency>
             <groupId>javax</groupId>
@@ -92,6 +79,7 @@
         <module>validation-i18n</module>
         <module>velocity</module>
         <module>view-annotation</module>
+        <module>pebble</module>
     </modules>
     <profiles>
         <profile>
@@ -109,8 +97,8 @@
                     <scope>compile</scope>
                 </dependency>
                 <dependency>
-                    <groupId>org.glassfish.ozark</groupId>
-                    <artifactId>ozark</artifactId>
+                    <groupId>org.mvc-spec.ozark</groupId>
+                    <artifactId>ozark-jersey</artifactId>
                     <version>${project.version}</version>
                     <scope>runtime</scope>
                 </dependency>
@@ -395,10 +383,6 @@
                 <failOnError>false</failOnError>
                 <timeout>60</timeout>
             </properties>
-        </profile>    
+        </profile>
     </profiles>
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    </properties>
 </project>
